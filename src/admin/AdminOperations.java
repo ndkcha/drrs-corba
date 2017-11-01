@@ -57,9 +57,7 @@ class AdminOperations {
             System.out.println("Enter the end time (hh:mm):");
             end = scan.nextLine();
 
-            TimeSlot slot = new TimeSlot();
-            slot.startTime = start;
-            slot.endTime = end;
+            TimeSlot slot = new TimeSlot(start, end, "", "");
             timeSlots.add(slot);
 
             System.out.println("Add another time-slot (y/n):");
@@ -106,9 +104,7 @@ class AdminOperations {
             System.out.println("Enter the end time (hh:mm):");
             end = scan.nextLine();
 
-            TimeSlot slot = new TimeSlot();
-            slot.startTime = start;
-            slot.endTime = end;
+            TimeSlot slot = new TimeSlot(start, end, "", "");
             timeSlots.add(slot);
 
             System.out.println("Add another time-slot (y/n):");

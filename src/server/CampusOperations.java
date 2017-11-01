@@ -174,7 +174,7 @@ public class CampusOperations extends CampusPOA {
                                 int slotIndex = timeSlotList.indexOf(item);
 
                                 // is it already booked ?
-                                if (item.bookedBy != null) {
+                                if (!item.bookedBy.isEmpty()) {
                                     String code = item.bookedBy.substring(0, 3).toUpperCase();
 
                                     // is it own student ? update the count : ask the server to update their count
@@ -304,6 +304,7 @@ public class CampusOperations extends CampusPOA {
         }
 
         availTimeSlots.value = slots;
+        this.logs.info("The available time slots have been returned to the user.");
         return true;
     }
 
@@ -321,10 +322,11 @@ public class CampusOperations extends CampusPOA {
 
             for (TimeSlot item : slots) {
                 // already booked ? it's not available
-                total += ((item.bookingId == null) ? 1 : 0);
+                total += ((item.bookingId.isEmpty()) ? 1 : 0);
             }
         }
 
+        this.logs.info("The total time slots for " + date + " have been requested and served!");
         return total;
     }
 
@@ -434,7 +436,7 @@ public class CampusOperations extends CampusPOA {
                 if (slot == null)
                     return "Time slot does not exist!";
                 // already booked ? no booking.
-                if (slot.bookedBy != null)
+                if (!slot.bookedBy.isEmpty())
                     return "Time slot has already been booked by other student.";
 
                 // generate booking id.
@@ -574,7 +576,7 @@ public class CampusOperations extends CampusPOA {
             if (slot == null)
                 return "Time slot does not exist!";
             // already booked ? no booking.
-            if (slot.bookedBy != null)
+            if (!slot.bookedBy.isEmpty())
                 return "Time slot has already been booked by other student.";
 
             // generate booking id.
@@ -625,11 +627,11 @@ public class CampusOperations extends CampusPOA {
 
                         // find the time slot
                         for (TimeSlot item : timeSlots) {
-                            if ((item.bookingId != null) && (item.bookingId.equalsIgnoreCase(bookingId))) {
+                            if (item.bookingId.equalsIgnoreCase(bookingId)) {
                                 int slotIndex = timeSlots.indexOf(item);
 
-                                item.bookingId = null;
-                                item.bookedBy = null;
+                                item.bookingId = "";
+                                item.bookedBy = "";
 
                                 // update the data-set
                                 timeSlots.set(slotIndex, item);
@@ -720,11 +722,11 @@ public class CampusOperations extends CampusPOA {
 
                     // find the time slot
                     for (TimeSlot item : timeSlots) {
-                        if ((item.bookingId != null) && (item.bookingId.equalsIgnoreCase(bookingId))) {
+                        if (item.bookingId.equalsIgnoreCase(bookingId)) {
                             int slotIndex = timeSlots.indexOf(item);
 
-                            item.bookingId = null;
-                            item.bookedBy = null;
+                            item.bookingId = "";
+                            item.bookedBy = "";
 
                             // update the data-set
                             timeSlots.set(slotIndex, item);
