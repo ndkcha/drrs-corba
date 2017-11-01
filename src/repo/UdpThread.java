@@ -42,8 +42,7 @@ public class UdpThread implements Runnable {
                     break;
                 case CentralRepositoryOps.UDP_PORT.OP_CODE:
                     String code = (String) udpPacket.body.get(CentralRepositoryOps.UDP_PORT.BODY_CODE);
-                    int udpPort = this.ops.getUdpPort(code);
-                    outgoing = serialize(udpPort);
+                    outgoing = serialize(this.ops.getUdpPort(code));
                     break;
                 default:
                     outgoing = serialize("Error");

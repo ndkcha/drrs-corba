@@ -2,6 +2,8 @@ package schema;
 
 import java.io.Serializable;
 
+// holds the data representation that can be passed amongst the servers.
+
 public class Campus implements Serializable {
     private int udpPort;
     private String namingReference, code;

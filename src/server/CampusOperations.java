@@ -33,6 +33,7 @@ public class CampusOperations extends CampusPOA {
         this.logs = logs;
     }
 
+    // ask for the campus details to make it visible in the local network as well as in remote references
     Campus setUpCampus(String name, Scanner scan) {
         String namingReference, code;
         int port;
@@ -46,12 +47,13 @@ public class CampusOperations extends CampusPOA {
         System.out.println("Enter the port number for UDP server:");
         port = scan.nextInt();
 
+        // store the local copy of the variable to use it in further operations
         campus = new Campus(port, code, namingReference, name);
         return campus;
     }
 
     void registerCampus() {
-        // connect to auth server and register campus
+        // connect to central repository and register campus
         try {
             String message;
             DatagramSocket socket = new DatagramSocket();
@@ -76,18 +78,18 @@ public class CampusOperations extends CampusPOA {
 
             // parse response and reflect back to user
             boolean response = (boolean) deserialize(incomingPacket.getData());
-            message = response ? "The campus has been registered to the authentication server successfully." : "The campus already exists at the server.";
+            message = response ? "The campus server is now visible in local network (to other servers)." : "The campus already exists in the network.";
 
             if (response)
                 logs.info(message);
             else
                 logs.warning(message);
         } catch (SocketException se) {
-            logs.warning("Error creating a client socket for connection to authentication server.\nMessage: " + se.getMessage());
+            logs.warning("Error creating a client socket for connection to central repository.\nMessage: " + se.getMessage());
         } catch (IOException ioe) {
             logs.warning("Error creating serialized object.\nMessage: " + ioe.getMessage());
         } catch (ClassNotFoundException e) {
-            logs.warning("Error parsing the response from auth server.\nMessage: " + e.getMessage());
+            logs.warning("Error parsing the response from central repository.\nMessage: " + e.getMessage());
         }
     }
 
@@ -207,7 +209,7 @@ public class CampusOperations extends CampusPOA {
     }
 
     private void deleteBookingOnOtherServer(String studentId, String bookingId, int port) {
-        // connect to auth server
+        // connect to relevant server
         try {
             DatagramSocket socket = new DatagramSocket();
 
@@ -228,7 +230,7 @@ public class CampusOperations extends CampusPOA {
             socket.receive(incomingPacket);
 
         } catch (SocketException se) {
-            logs.warning("Error creating a client socket for connection to authentication server.\nMessage: " + se.getMessage());
+            logs.warning("Error creating a client socket for connection to the other server.\nMessage: " + se.getMessage());
         } catch (IOException ioe) {
             logs.warning("Error creating serialized object.\nMessage: " + ioe.getMessage());
         }
@@ -331,7 +333,7 @@ public class CampusOperations extends CampusPOA {
     }
 
     private List<Campus> getListOfCampuses() {
-        // connect to auth server
+        // connect to central repository
         try {
             DatagramSocket socket = new DatagramSocket();
 
@@ -353,11 +355,11 @@ public class CampusOperations extends CampusPOA {
 
             return response;
         } catch (SocketException se) {
-            logs.warning("Error creating a client socket for connection to authentication server.\nMessage: " + se.getMessage());
+            logs.warning("Error creating a client socket for connection to central repository.\nMessage: " + se.getMessage());
         } catch (IOException ioe) {
             logs.warning("Error creating serialized object.\nMessage: " + ioe.getMessage());
         } catch (ClassNotFoundException e) {
-            logs.warning("Error parsing the response from auth server.\nMessage: " + e.getMessage());
+            logs.warning("Error parsing the response from central repository.\nMessage: " + e.getMessage());
         }
 
         return null;
@@ -386,11 +388,11 @@ public class CampusOperations extends CampusPOA {
 
             total = (int) deserialize(incomingPacket.getData());
         } catch (SocketException se) {
-            logs.warning("Error creating a client socket for connection to authentication server.\nMessage: " + se.getMessage());
+            logs.warning("Error creating a client socket for connection to central repository.\nMessage: " + se.getMessage());
         } catch (IOException ioe) {
             logs.warning("Error creating serialized object.\nMessage: " + ioe.getMessage());
         } catch (ClassNotFoundException e) {
-            logs.warning("Error parsing the response from auth server.\nMessage: " + e.getMessage());
+            logs.warning("Error parsing the response from central repository.\nMessage: " + e.getMessage());
         }
 
         return total;
@@ -408,7 +410,7 @@ public class CampusOperations extends CampusPOA {
         student = this.students.get(studentId);
 
         // super active student. no booking.
-        if (student.bookingIds.size() > 3)
+        if (student.bookingIds.size() > 2)
             return "Maximum booking limit has been exceeded.";
 
         if (code.equalsIgnoreCase(campus.getCode())) {
@@ -481,7 +483,7 @@ public class CampusOperations extends CampusPOA {
     private int getUdpPort(String code) {
         int port = -1;
 
-        // connect to auth server
+        // connect to central repository
         try {
             DatagramSocket socket = new DatagramSocket();
 
@@ -502,11 +504,11 @@ public class CampusOperations extends CampusPOA {
 
             port = (int) deserialize(incomingPacket.getData());
         } catch (SocketException se) {
-            logs.warning("Error creating a client socket for connection to authentication server.\nMessage: " + se.getMessage());
+            logs.warning("Error creating a client socket for connection to central repository.\nMessage: " + se.getMessage());
         } catch (IOException ioe) {
             logs.warning("Error creating serialized object.\nMessage: " + ioe.getMessage());
         } catch (ClassNotFoundException e) {
-            logs.warning("Error parsing the response from auth server.\nMessage: " + e.getMessage());
+            logs.warning("Error parsing the response from central repository.\nMessage: " + e.getMessage());
         }
 
         return port;
@@ -515,7 +517,7 @@ public class CampusOperations extends CampusPOA {
     private String bookRoomOnOtherCampus(String studentId, int roomNo, String date, TimeSlot slot, int udpPort) {
         String bookingId = null;
 
-        // connect to auth server
+        // connect to the other campus
         try {
             DatagramSocket socket = new DatagramSocket();
 
@@ -540,11 +542,11 @@ public class CampusOperations extends CampusPOA {
             bookingId = (String) deserialize(incomingPacket.getData());
 
         } catch (SocketException se) {
-            logs.warning("Error creating a client socket for connection to authentication server.\nMessage: " + se.getMessage());
+            logs.warning("Error creating a client socket for connection to the other campus.\nMessage: " + se.getMessage());
         } catch (IOException ioe) {
             logs.warning("Error creating serialized object.\nMessage: " + ioe.getMessage());
         } catch (ClassNotFoundException e) {
-            logs.warning("Error parsing the response from auth server.\nMessage: " + e.getMessage());
+            logs.warning("Error parsing the response from the other campus.\nMessage: " + e.getMessage());
         }
 
         return bookingId;
@@ -674,7 +676,7 @@ public class CampusOperations extends CampusPOA {
     private boolean cancelBookingOnOtherCampus(String bookingId, int udpPort) {
         boolean success = false;
 
-        // connect to auth server
+        // connect to the other campus
         try {
             DatagramSocket socket = new DatagramSocket();
 
@@ -696,11 +698,11 @@ public class CampusOperations extends CampusPOA {
             success = (boolean) deserialize(incomingPacket.getData());
 
         } catch (SocketException se) {
-            logs.warning("Error creating a client socket for connection to authentication server.\nMessage: " + se.getMessage());
+            logs.warning("Error creating a client socket for connection to the other campus.\nMessage: " + se.getMessage());
         } catch (IOException ioe) {
             logs.warning("Error creating serialized object.\nMessage: " + ioe.getMessage());
         } catch (ClassNotFoundException e) {
-            logs.warning("Error parsing the response from auth server.\nMessage: " + e.getMessage());
+            logs.warning("Error parsing the response from the other campus.\nMessage: " + e.getMessage());
         }
 
         return success;

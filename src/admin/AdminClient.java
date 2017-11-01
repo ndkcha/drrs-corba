@@ -26,7 +26,8 @@ public class AdminClient {
         Logger logs = Logger.getLogger("Admin Client");
         Scanner scanner = new Scanner(System.in);
 
-        System.out.println("Enter the (reference) name of the server: ");
+        // ask where to go
+        System.out.print("Enter the (reference) name of the server: ");
         campusNamingReference = scanner.nextLine();
 
         // start orb client

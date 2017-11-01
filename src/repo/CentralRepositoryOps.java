@@ -40,6 +40,7 @@ public class CentralRepositoryOps {
         }
     }
 
+    // converts the hash map of the campuses to the list
     List<Campus> getCampusList() {
         List<Campus> list = new ArrayList<>();
         for (Map.Entry<String, Campus> campusEntry : campusList.entrySet()) {
@@ -49,6 +50,7 @@ public class CentralRepositoryOps {
         return list;
     }
 
+    // returns the udp port of the requested campus
     int getUdpPort(String code) {
         if (!this.campusList.containsKey(code)) {
             logs.warning("Could not complete the request for udp port. No campus found for " + code);
@@ -58,6 +60,8 @@ public class CentralRepositoryOps {
         logs.info("The udp port is requested for " + code + "!");
         return this.campusList.get(code).getUdpPort();
     }
+
+    // key-fields signatures for the UDP communication
 
     public static abstract class ADD_CAMPUS {
         public static final int OP_CODE = 0;

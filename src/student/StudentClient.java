@@ -27,7 +27,7 @@ public class StudentClient {
         Logger logs = Logger.getLogger("Admin Client");
         Scanner scanner = new Scanner(System.in);
 
-        System.out.println("Enter the (reference) name of the server: ");
+        System.out.print("Enter the (reference) name of the server: ");
         namingReference = scanner.nextLine();
 
         // start orb client
@@ -82,11 +82,11 @@ public class StudentClient {
         }
 
         // be nice
-        System.out.print("\n\n\tWelcome to the campus!\n");
+        System.out.println("\n\n\tWelcome to the campus!\n");
 
         do {
             // ask what to do
-            System.out.println("What do you want to do?\n\t1. Book a room\n\t2. Cancel booking\nAny other number to exit");
+            System.out.print("What do you want to do?\n\t1. Book a room\n\t2. Cancel booking\nAny other number to exit\n : ");
             choice = scanner.nextInt();
             scanner.nextLine();
 
@@ -94,7 +94,7 @@ public class StudentClient {
                 // create a room
                 case 1:
                     success = studentOps.bookRoom(scanner, studentId);
-                    message = success ? "A room has successfully been created." : "An unexpected error thrown while creating a room.";
+                    message = success ? "A room has successfully been booked." : "An unexpected error thrown while booking a room.";
                     break;
                 // cancel booking
                 case 2:

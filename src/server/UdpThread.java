@@ -35,28 +35,24 @@ public class UdpThread implements Runnable {
             // perform actions
             switch (udpPacket.operationName) {
                 case CampusOperations.TOTAL_TIMESLOT.OP_CODE:
-                    String date = (String) udpPacket.body.get(CampusOperations.TOTAL_TIMESLOT.BODY_DATE);
-                    int totalTimeSlots = this.campusOps.totalAvailableTimeSlots(date);
-                    outgoing = serialize(totalTimeSlots);
+                    String ttsDate = (String) udpPacket.body.get(CampusOperations.TOTAL_TIMESLOT.BODY_DATE);
+                    outgoing = serialize(this.campusOps.totalAvailableTimeSlots(ttsDate));
                     break;
                 case CampusOperations.BOOK_OTHER_SERVER.OP_CODE:
-                    String studentId = (String) udpPacket.body.get(CampusOperations.BOOK_OTHER_SERVER.BODY_STUDENT_ID);
-                    int roomNo = (int) udpPacket.body.get(CampusOperations.BOOK_OTHER_SERVER.BODY_ROOM_NO);
-                    String d = (String) udpPacket.body.get(CampusOperations.BOOK_OTHER_SERVER.BODY_DATE);
-                    TimeSlot slot = (TimeSlot) udpPacket.body.get(CampusOperations.BOOK_OTHER_SERVER.BODY_TIME_SLOT);
-                    String bookingId = this.campusOps.bookRoomFromOtherCampus(studentId, roomNo, d, slot);
-                    outgoing = serialize(bookingId);
+                    String bosStudentId = (String) udpPacket.body.get(CampusOperations.BOOK_OTHER_SERVER.BODY_STUDENT_ID);
+                    int bosRoomNo = (int) udpPacket.body.get(CampusOperations.BOOK_OTHER_SERVER.BODY_ROOM_NO);
+                    String bosDate = (String) udpPacket.body.get(CampusOperations.BOOK_OTHER_SERVER.BODY_DATE);
+                    TimeSlot bosSlot = (TimeSlot) udpPacket.body.get(CampusOperations.BOOK_OTHER_SERVER.BODY_TIME_SLOT);
+                    outgoing = serialize(this.campusOps.bookRoomFromOtherCampus(bosStudentId, bosRoomNo, bosDate, bosSlot));
                     break;
                 case CampusOperations.CANCEL_OTHER_SERVER.OP_CODE:
-                    String bId = (String) udpPacket.body.get(CampusOperations.CANCEL_OTHER_SERVER.BODY_BOOKING_ID);
-                    boolean success = this.campusOps.cancelBookingFromOtherCampus(bId);
-                    outgoing = serialize(success);
+                    String cosBookingId = (String) udpPacket.body.get(CampusOperations.CANCEL_OTHER_SERVER.BODY_BOOKING_ID);
+                    outgoing = serialize(this.campusOps.cancelBookingFromOtherCampus(cosBookingId));
                     break;
                 case CampusOperations.DELETE_BOOKING.OP_CODE:
-                    String bkId = (String) udpPacket.body.get(CampusOperations.DELETE_BOOKING.BODY_BOOKING_ID);
-                    String stId = (String) udpPacket.body.get(CampusOperations.DELETE_BOOKING.BODY_STUDENT_ID);
-                    boolean s = this.campusOps.deleteBooking(stId, bkId);
-                    outgoing = serialize(s);
+                    String dbBookingId = (String) udpPacket.body.get(CampusOperations.DELETE_BOOKING.BODY_BOOKING_ID);
+                    String dbStudentId = (String) udpPacket.body.get(CampusOperations.DELETE_BOOKING.BODY_STUDENT_ID);
+                    outgoing = serialize(this.campusOps.deleteBooking(dbStudentId, dbBookingId));
                     break;
                 default:
                     outgoing = serialize("Error");

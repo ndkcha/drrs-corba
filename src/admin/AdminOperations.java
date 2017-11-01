@@ -17,14 +17,15 @@ class AdminOperations {
         this.logs = logs;
     }
 
+    // asks user for adminId. generates one when necessary.
     String askAdminId(Scanner scan) {
         String response, adminId;
 
-        System.out.println("\nDo you have an adminId? (y/n)");
+        System.out.print("\nDo you have an adminId? (y/n): ");
         response = scan.nextLine();
 
         if (response.equalsIgnoreCase("y")) {
-            System.out.println("\nEnter your adminId: ");
+            System.out.print("\n\nEnter your adminId: ");
             adminId = scan.nextLine();
         } else {
             adminId = campus.generateAdminId();
@@ -41,26 +42,26 @@ class AdminOperations {
         boolean isMoreSlots, success = false;
 
         // ask necessary things
-        System.out.println("Enter the date (format: dd-MM-yyyy, e.g. 11-01-2018):");
+        System.out.print("Enter the date (format: dd-MM-yyyy, e.g. 11-01-2018)\n : ");
         date = scan.nextLine();
 
-        System.out.println("Enter the room number (integer values only):");
+        System.out.print("Enter the room number (integer values only)\n : ");
         roomNo = scan.nextInt();
         scan.nextLine();
 
-        System.out.println("Entries for the time-slots:");
+        System.out.println("\nEntries for the time-slots:");
 
         do {
-            System.out.println("Enter the start time (hh:mm):");
+            System.out.print("\nEnter the start time (hh:mm): ");
             start = scan.nextLine();
 
-            System.out.println("Enter the end time (hh:mm):");
+            System.out.print("Enter the end time (hh:mm): ");
             end = scan.nextLine();
 
             TimeSlot slot = new TimeSlot(start, end, "", "");
             timeSlots.add(slot);
 
-            System.out.println("Add another time-slot (y/n):");
+            System.out.print("Add another time-slot? (y/n):");
             response = scan.nextLine();
 
             isMoreSlots = response.equalsIgnoreCase("y");
@@ -88,26 +89,26 @@ class AdminOperations {
         boolean isMoreSlots, success = false;
 
         // ask necessary things
-        System.out.println("Enter the date (format: dd-MM-yyyy, e.g. 11-01-2018):");
+        System.out.print("Enter the date (format: dd-MM-yyyy, e.g. 11-01-2018)\n : ");
         date = scan.nextLine();
 
-        System.out.println("Enter the room number (integer values only):");
+        System.out.println("Enter the room number (integer values only)\n : ");
         roomNo = scan.nextInt();
         scan.nextLine();
 
-        System.out.println("Entries for the time-slots:");
+        System.out.println("\nEntries for the time-slots:");
 
         do {
-            System.out.println("Enter the start time (hh:mm):");
+            System.out.print("\nEnter the start time (hh:mm): ");
             start = scan.nextLine();
 
-            System.out.println("Enter the end time (hh:mm):");
+            System.out.print("Enter the end time (hh:mm): ");
             end = scan.nextLine();
 
             TimeSlot slot = new TimeSlot(start, end, "", "");
             timeSlots.add(slot);
 
-            System.out.println("Add another time-slot (y/n):");
+            System.out.print("Add another time-slot? (y/n): ");
             response = scan.nextLine();
 
             isMoreSlots = response.equalsIgnoreCase("y");
@@ -121,6 +122,7 @@ class AdminOperations {
             slots[i] = timeSlots.get(i);
         }
 
+        // perform the operation
         success = campus.deleteRoom(date, roomNo, slots);
 
         return success;

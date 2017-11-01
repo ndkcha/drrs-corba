@@ -20,15 +20,15 @@ class StudentOperations {
     String askStudentId(Scanner scan) {
         String response, studentId;
 
-        System.out.println("Do you have a studentId? (y/n):");
+        System.out.print("Do you have a studentId? (y/n): ");
         response = scan.nextLine();
 
         if (response.equalsIgnoreCase("y")) {
-            System.out.println("Enter your studentId:");
+            System.out.print("\nEnter your studentId: ");
             studentId = scan.nextLine();
         } else {
             studentId = campus.generateStudentId();
-            System.out.println("\nYour new studentId is " + studentId + ".\nUse it for the logging into the system next time.");
+            System.out.println("\n\nYour new studentId is " + studentId + ".\n");
         }
 
         return studentId;
@@ -41,18 +41,18 @@ class StudentOperations {
         TimeSlot slot;
         AvailTimeSlotsHolder availTimeSlotsHolder = new AvailTimeSlotsHolder();
 
-        System.out.println("Enter the date for which you want to book the room (format: dd-MM-yyyy, e.g. 11-01-2018):");
+        System.out.print("Enter the date for which you want to book the room (format: dd-MM-yyyy, e.g. 11-01-2018)\n :");
         date = scan.nextLine();
 
         campus.getAvailableTimeSlots(date, availTimeSlotsHolder);
 
-        System.out.println("Available time-slot(s):");
+        System.out.println("\nAvailable time-slot(s):");
 
         for (AvailTimeSlot availTimeSlot : availTimeSlotsHolder.value) {
             System.out.println(availTimeSlot.campusCode + " " + availTimeSlot.noOfSlots);
         }
 
-        System.out.println("Enter the campus code:");
+        System.out.print("\nEnter the campus code: ");
         code = scan.nextLine();
 
         // user gave wrong campus code. no booking.
@@ -67,19 +67,17 @@ class StudentOperations {
             return false;
         }
 
-        System.out.println("Enter the room number:");
+        System.out.print("Enter the room number: ");
         roomNo = scan.nextInt();
         scan.nextLine();
 
-        System.out.println("Enter the 'start time' for time slot (format: hh:mm):");
+        System.out.print("Enter the 'start time' for time slot (format: hh:mm): ");
         start = scan.nextLine();
 
-        System.out.println("Enter the 'end time' for time slot (format: hh:mm):");
+        System.out.print("Enter the 'end time' for time slot (format: hh:mm): ");
         end = scan.nextLine();
 
-        slot = new TimeSlot();
-        slot.startTime = start;
-        slot.endTime = end;
+        slot = new TimeSlot(start, end, "", "");
 
         bookingId = campus.bookRoom(studentId, code, date, roomNo, slot);
 
@@ -101,7 +99,7 @@ class StudentOperations {
         boolean success;
         String bookingId;
 
-        System.out.println("Enter the bookingId:");
+        System.out.print("Enter the bookingId: ");
         bookingId = scan.nextLine();
 
         success = campus.cancelBooking(studentId, bookingId);
