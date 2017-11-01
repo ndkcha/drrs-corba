@@ -210,7 +210,55 @@ public class CampusOperations extends CampusPOA {
 
     @Override
     public boolean resetBookings() {
-        return false;
+        // make sure no one else touches the room
+        synchronized (roomLock) {
+            // iterate through date entries
+            for (Map.Entry<String, HashMap<Integer, List<TimeSlot>>> dateEntry : this.roomRecords.entrySet()) {
+                String date = dateEntry.getKey();
+                HashMap<Integer, List<TimeSlot>> rooms = dateEntry.getValue();
+
+                // iterate through room entries
+                for (Map.Entry<Integer, List<TimeSlot>> roomEntry : rooms.entrySet()) {
+                    int roomNumber = roomEntry.getKey();
+                    List<TimeSlot> timeSlots = roomEntry.getValue();
+
+                    // clear the bookings in all the time slots
+                    for (TimeSlot slot : timeSlots) {
+                        // booking exists
+                        if (!slot.bookedBy.isEmpty()) {
+                            int slotIndex = timeSlots.indexOf(slot);
+                            String code = slot.bookedBy.substring(0, 3).toUpperCase();
+
+                            // is it own student ? update the count : ask the server to update their count
+                            if (this.students.containsKey(slot.bookedBy)) {
+                                synchronized (studentLock) {
+                                    Student student = this.students.get(slot.bookedBy);
+                                    student.bookingIds.remove(slot.bookingId);
+                                    this.students.put(student.getStudentId(), student);
+                                }
+                            } else {
+                                int port = this.getUdpPort(code);
+                                this.deleteBookingOnOtherServer(slot.bookedBy, slot.bookingId, port);
+                            }
+
+                            // clear the room
+                            slot.bookedBy = "";
+                            slot.bookingId = "";
+
+                            // update the time-slots
+                            timeSlots.set(slotIndex, slot);
+                        }
+                    }
+
+                    // update the rooms
+                    rooms.put(roomNumber, timeSlots);
+                }
+
+                // update the date
+                this.roomRecords.put(date, rooms);
+            }
+            return true;
+        }
     }
 
     private void deleteBookingOnOtherServer(String studentId, String bookingId, int port) {
