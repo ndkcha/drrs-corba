@@ -208,6 +208,11 @@ public class CampusOperations extends CampusPOA {
         return success;
     }
 
+    @Override
+    public boolean resetBookings() {
+        return false;
+    }
+
     private void deleteBookingOnOtherServer(String studentId, String bookingId, int port) {
         // connect to relevant server
         try {
@@ -671,6 +676,52 @@ public class CampusOperations extends CampusPOA {
         }
 
         return success;
+    }
+
+    @Override
+    public String changeBooking(String bookingId, String code, String date, int roomNumber, TimeSlot timeSlot) {
+        String studentId, newBookingId;
+        Student student = null;
+
+        // find the corresponding student
+        for (Map.Entry<String, Student> studentEntry : this.students.entrySet()) {
+            if (studentEntry.getValue().bookingIds.indexOf(bookingId) > -1) {
+                student = studentEntry.getValue();
+                break;
+            }
+        }
+
+        // no student. it's not my booking.
+        if (student == null)
+            return "No booking found with id " + bookingId + " at the campus.";
+
+        // extract the student id for the future use
+        studentId = student.getStudentId();
+
+        // decrement the student count to ensure the new booking
+        synchronized (studentLock) {
+            student.bookingIds.remove(bookingId);
+            this.students.put(studentId, student);
+        }
+
+        // book a new room
+        newBookingId = this.bookRoom(studentId, code, date, roomNumber, timeSlot);
+
+        // update the count with old booking id (later on it can be changed based on the success of booking the new room
+        synchronized (studentLock) {
+            student.bookingIds.add(bookingId);
+            this.students.put(studentId, student);
+        }
+
+        //  new room booked successfully ? cancel the old booking : the count has already been restored, just return back to client
+        if (newBookingId.startsWith("BKG"))
+            this.cancelBooking(studentId, bookingId);
+        else {
+            this.logs.warning(newBookingId);
+            newBookingId = "The booking could not be changed.\n" + newBookingId;
+        }
+
+        return newBookingId;
     }
 
     private boolean cancelBookingOnOtherCampus(String bookingId, int udpPort) {

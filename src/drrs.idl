@@ -21,6 +21,7 @@ module RoomReservationApp {
         string generateAdminId();
         boolean createRoom(in string date, in long roomNo, in TimeSlots timeSlots);
         boolean deleteRoom(in string date, in long roomNo, in TimeSlots timeSlots);
+        boolean resetBookings();
 
         // student interface
         boolean lookupStudent(in string id);
@@ -28,5 +29,6 @@ module RoomReservationApp {
         boolean getAvailableTimeSlots(in string date, out AvailTimeSlots availTimeSlots);
         string bookRoom(in string studentId, in string code, in string date, in long roomNumber, in TimeSlot timeSlot);
         boolean cancelBooking(in string studentId, in string bookingId);
+        string changeBooking(in string bookingId, in string code, in string date, in long roomNumber, in TimeSlot timeSlot);
     };
 };
