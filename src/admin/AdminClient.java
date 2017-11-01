@@ -95,6 +95,10 @@ public class AdminClient {
                     success = adminOps.createRoom(scanner);
                     message = success ? "A room has successfully been created." : "An unexpected error thrown while creating a room.";
                     break;
+                case 2:
+                    success = adminOps.deleteRoom(scanner);
+                    message = success ? "The room has successfully been deleted." : "An unexpected error thrown while deleting a room.";
+                    break;
                 // exit
                 default:
                     message = "Exit requested! Have a nice day!";

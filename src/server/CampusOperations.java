@@ -155,7 +155,97 @@ public class CampusOperations extends CampusPOA {
 
     @Override
     public boolean deleteRoom(String date, int roomNo, TimeSlot[] timeSlots) {
-        return false;
+        boolean success = false;
+
+        // make sure no one manipulates the data-set
+        synchronized (roomLock) {
+            // find the date
+            if (this.roomRecords.containsKey(date)) {
+                HashMap<Integer, List<TimeSlot>> rooms = this.roomRecords.get(date);
+
+                // find the room
+                if (rooms.containsKey(roomNo)) {
+                    List<TimeSlot> timeSlotList = rooms.get(roomNo);
+
+                    for (TimeSlot inTimeSlot : timeSlots) {
+                        // find slots to delete and delete them
+                        for (TimeSlot item : timeSlotList) {
+                            if (item.startTime.equalsIgnoreCase(inTimeSlot.startTime) && item.endTime.equalsIgnoreCase(inTimeSlot.endTime)) {
+                                int slotIndex = timeSlotList.indexOf(item);
+
+                                // is it already booked ?
+                                if (item.bookedBy != null) {
+                                    String code = item.bookedBy.substring(0, 3).toUpperCase();
+
+                                    // is it own student ? update the count : ask the server to update their count
+                                    if (this.students.containsKey(item.bookedBy)) {
+                                        synchronized (studentLock) {
+                                            Student student = this.students.get(item.bookedBy);
+                                            student.bookingIds.remove(item.bookingId);
+                                            this.students.put(student.getStudentId(), student);
+                                        }
+                                    } else {
+                                        int port = this.getUdpPort(code);
+                                        this.deleteBookingOnOtherServer(item.bookedBy, item.bookingId, port);
+                                    }
+                                }
+
+                                timeSlotList.remove(slotIndex);
+                            }
+                        }
+                    }
+
+                    rooms.put(roomNo, timeSlotList);
+                    this.roomRecords.put(date, rooms);
+
+                    success = true;
+                }
+            }
+        }
+
+        return success;
+    }
+
+    private void deleteBookingOnOtherServer(String studentId, String bookingId, int port) {
+        // connect to auth server
+        try {
+            DatagramSocket socket = new DatagramSocket();
+
+            // make data object
+            HashMap<String, Object> body = new HashMap<>();
+            body.put(DELETE_BOOKING.BODY_STUDENT_ID, studentId);
+            body.put(DELETE_BOOKING.BODY_BOOKING_ID, bookingId);
+            UdpPacket udpPacket = new UdpPacket(DELETE_BOOKING.OP_CODE, body);
+
+            // make packet and send
+            byte[] outgoing = serialize(udpPacket);
+            DatagramPacket outgoingPacket = new DatagramPacket(outgoing, outgoing.length, InetAddress.getByName("localhost"), port);
+            socket.send(outgoingPacket);
+
+            // incoming
+            byte[] incoming = new byte[1000];
+            DatagramPacket incomingPacket = new DatagramPacket(incoming, incoming.length);
+            socket.receive(incomingPacket);
+
+        } catch (SocketException se) {
+            logs.warning("Error creating a client socket for connection to authentication server.\nMessage: " + se.getMessage());
+        } catch (IOException ioe) {
+            logs.warning("Error creating serialized object.\nMessage: " + ioe.getMessage());
+        }
+    }
+
+    // invoke this when room is deleted for that booking.
+    boolean deleteBooking(String studentId, String bookingId) {
+        synchronized (studentLock) {
+            if (!this.students.containsKey(studentId))
+                return false;
+
+            Student student = this.students.get(studentId);
+            student.bookingIds.remove(bookingId);
+
+            this.students.put(studentId, student);
+        }
+        return true;
     }
 
     @Override
@@ -691,5 +781,11 @@ public class CampusOperations extends CampusPOA {
     static abstract class CANCEL_OTHER_SERVER {
         static final int OP_CODE = 2;
         static final String BODY_BOOKING_ID = "bI";
+    }
+
+    static abstract class DELETE_BOOKING {
+        static final int OP_CODE = 3;
+        static final String BODY_BOOKING_ID = "bI";
+        static final String BODY_STUDENT_ID = "sI";
     }
 }
