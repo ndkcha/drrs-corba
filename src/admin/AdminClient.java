@@ -62,7 +62,7 @@ public class AdminClient {
         }
 
         // initialize implementation class for the client
-        adminOps = new AdminOperations(campus, logs);
+        adminOps = new AdminOperations(campus);
 
         // get adminId from the user
         adminId = adminOps.askAdminId(scanner);
@@ -86,7 +86,7 @@ public class AdminClient {
 
         do {
             // ask what to do
-            System.out.println("What do you want to do?\n\t1. Create a room\n\t2. Delete a room\nAny other number to exit");
+            System.out.println("What do you want to do?\n\t1. Create a room\n\t2. Delete a room\n\t3. Reset the bookings\nAny other number to exit");
             choice = scanner.nextInt();
             scanner.nextLine();
 
@@ -96,9 +96,14 @@ public class AdminClient {
                     success = adminOps.createRoom(scanner);
                     message = success ? "A room has successfully been created." : "An unexpected error thrown while creating a room.";
                     break;
+                // delete a room
                 case 2:
                     success = adminOps.deleteRoom(scanner);
                     message = success ? "The room has successfully been deleted." : "An unexpected error thrown while deleting a room.";
+                    break;
+                case 3:
+                    success = campus.resetBookings();
+                    message = success ? "All the bookings have been reset to none" : "You are not authorized to reset the bookings.";
                     break;
                 // exit
                 default:

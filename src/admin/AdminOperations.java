@@ -10,11 +10,9 @@ import java.util.logging.Logger;
 
 class AdminOperations {
     private Campus campus;
-    private Logger logs;
 
-    AdminOperations(Campus campus, Logger logs) {
+    AdminOperations(Campus campus) {
         this.campus = campus;
-        this.logs = logs;
     }
 
     // asks user for adminId. generates one when necessary.
