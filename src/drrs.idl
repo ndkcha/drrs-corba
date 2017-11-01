@@ -1,0 +1,32 @@
+module RoomReservationApp {
+
+    struct TimeSlot {
+        string startTime;
+        string endTime;
+        string bookedBy;
+        string bookingId;
+    };
+
+    struct AvailTimeSlot {
+        string campusCode;
+        long noOfSlots;
+    };
+
+    typedef sequence<TimeSlot> TimeSlots;
+    typedef sequence<AvailTimeSlot> AvailTimeSlots;
+
+    interface Campus {
+        // admin interface
+        boolean lookupAdmin(in string id);
+        string generateAdminId();
+        boolean createRoom(in string date, in long roomNo, in TimeSlots timeSlots);
+        boolean deleteRoom(in string date, in long roomNo, in TimeSlots timeSlots);
+
+        // student interface
+        boolean lookupStudent(in string id);
+        string generateStudentId();
+        boolean getAvailableTimeSlots(in string date, out AvailTimeSlots availTimeSlots);
+        string bookRoom(in string studentId, in string date, in long roomNumber, in TimeSlot timeSlot);
+        boolean cancelBooking(in string studentId, in string bookingId);
+    };
+};
