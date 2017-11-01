@@ -93,8 +93,13 @@ public class StudentClient {
             switch (choice) {
                 // create a room
                 case 1:
-                    success = false;
+                    success = studentOps.bookRoom(scanner, studentId);
                     message = success ? "A room has successfully been created." : "An unexpected error thrown while creating a room.";
+                    break;
+                // cancel booking
+                case 2:
+                    success = studentOps.cancelBooking(scanner, studentId);
+                    message = success ? "The booking has been cancelled successfully" : "An unexpected error thrown while cancelling the booking.";
                     break;
                 // exit
                 default:

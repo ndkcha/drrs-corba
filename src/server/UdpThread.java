@@ -47,6 +47,11 @@ public class UdpThread implements Runnable {
                     String bookingId = this.campusOps.bookRoomFromOtherCampus(studentId, roomNo, d, slot);
                     outgoing = serialize(bookingId);
                     break;
+                case CampusOperations.CANCEL_OTHER_SERVER.OP_CODE:
+                    String bId = (String) udpPacket.body.get(CampusOperations.CANCEL_OTHER_SERVER.BODY_BOOKING_ID);
+                    boolean success = this.campusOps.cancelBookingFromOtherCampus(bId);
+                    outgoing = serialize(success);
+                    break;
                 default:
                     outgoing = serialize("Error");
                     logs.warning("Operation not found!");

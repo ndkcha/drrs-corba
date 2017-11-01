@@ -509,7 +509,153 @@ public class CampusOperations extends CampusPOA {
 
     @Override
     public boolean cancelBooking(String studentId, String bookingId) {
-        return false;
+        boolean success = false;
+        Student student;
+        String code = bookingId.substring(3, 6);
+
+        // no student. no cancelling.
+        if (!this.students.containsKey(studentId))
+            return false;
+
+        student = this.students.get(studentId);
+
+        // own campus
+        if (code.equalsIgnoreCase(campus.getCode())) {
+            // make sure no one else manipulates the records
+            synchronized (roomLock) {
+                // find the date
+                for (Map.Entry<String, HashMap<Integer, List<TimeSlot>>> dateEntry : this.roomRecords.entrySet()) {
+                    String date = dateEntry.getKey();
+                    HashMap<Integer, List<TimeSlot>> room = dateEntry.getValue();
+
+                    // find the room
+                    for (Map.Entry<Integer, List<TimeSlot>> roomEntry : room.entrySet()) {
+                        int roomNumber = roomEntry.getKey();
+                        List<TimeSlot> timeSlots = roomEntry.getValue();
+
+                        // find the time slot
+                        for (TimeSlot item : timeSlots) {
+                            if ((item.bookingId != null) && (item.bookingId.equalsIgnoreCase(bookingId))) {
+                                int slotIndex = timeSlots.indexOf(item);
+
+                                item.bookingId = null;
+                                item.bookedBy = null;
+
+                                // update the data-set
+                                timeSlots.set(slotIndex, item);
+                                room.put(roomNumber, timeSlots);
+                                this.roomRecords.put(date, room);
+
+                                // mark the operation successful
+                                success = true;
+                                break;
+                            }
+                        }
+
+                        if (success)
+                            break;
+                    }
+
+                    if (success)
+                        break;
+                }
+            }
+        } else {
+            // other campus.
+            int port = this.getUdpPort(code);
+            success = this.cancelBookingOnOtherCampus(bookingId, port);
+        }
+
+        // update the student count
+        if (success) {
+            synchronized (studentLock) {
+                int bookingIndex = student.bookingIds.indexOf(bookingId);
+                student.bookingIds.remove(bookingIndex);
+                this.students.put(studentId, student);
+                logs.info("Booking with id, " + bookingId + " has been cancelled by " + studentId);
+            }
+        }
+
+        return success;
+    }
+
+    private boolean cancelBookingOnOtherCampus(String bookingId, int udpPort) {
+        boolean success = false;
+
+        // connect to auth server
+        try {
+            DatagramSocket socket = new DatagramSocket();
+
+            // make data object
+            HashMap<String, Object> body = new HashMap<>();
+            body.put(CANCEL_OTHER_SERVER.BODY_BOOKING_ID, bookingId);
+            UdpPacket udpPacket = new UdpPacket(CANCEL_OTHER_SERVER.OP_CODE, body);
+
+            // make packet and send
+            byte[] outgoing = serialize(udpPacket);
+            DatagramPacket outgoingPacket = new DatagramPacket(outgoing, outgoing.length, InetAddress.getByName("localhost"), udpPort);
+            socket.send(outgoingPacket);
+
+            // incoming
+            byte[] incoming = new byte[1000];
+            DatagramPacket incomingPacket = new DatagramPacket(incoming, incoming.length);
+            socket.receive(incomingPacket);
+
+            success = (boolean) deserialize(incomingPacket.getData());
+
+        } catch (SocketException se) {
+            logs.warning("Error creating a client socket for connection to authentication server.\nMessage: " + se.getMessage());
+        } catch (IOException ioe) {
+            logs.warning("Error creating serialized object.\nMessage: " + ioe.getMessage());
+        } catch (ClassNotFoundException e) {
+            logs.warning("Error parsing the response from auth server.\nMessage: " + e.getMessage());
+        }
+
+        return success;
+    }
+
+    boolean cancelBookingFromOtherCampus(String bookingId) {
+        boolean success = false;
+        // make sure no one else manipulates the records
+        synchronized (roomLock) {
+            // find the date
+            for (Map.Entry<String, HashMap<Integer, List<TimeSlot>>> dateEntry : this.roomRecords.entrySet()) {
+                String date = dateEntry.getKey();
+                HashMap<Integer, List<TimeSlot>> room = dateEntry.getValue();
+
+                // find the room
+                for (Map.Entry<Integer, List<TimeSlot>> roomEntry : room.entrySet()) {
+                    int roomNumber = roomEntry.getKey();
+                    List<TimeSlot> timeSlots = roomEntry.getValue();
+
+                    // find the time slot
+                    for (TimeSlot item : timeSlots) {
+                        if ((item.bookingId != null) && (item.bookingId.equalsIgnoreCase(bookingId))) {
+                            int slotIndex = timeSlots.indexOf(item);
+
+                            item.bookingId = null;
+                            item.bookedBy = null;
+
+                            // update the data-set
+                            timeSlots.set(slotIndex, item);
+                            room.put(roomNumber, timeSlots);
+                            this.roomRecords.put(date, room);
+
+                            // mark the operation successful
+                            success = true;
+                            break;
+                        }
+                    }
+
+                    if (success)
+                        break;
+                }
+
+                if (success)
+                    break;
+            }
+        }
+        return success;
     }
 
     private static byte[] serialize(Object obj) throws IOException {
@@ -531,14 +677,19 @@ public class CampusOperations extends CampusPOA {
 
     static abstract class TOTAL_TIMESLOT {
         static final int OP_CODE = 0;
-        static final String BODY_DATE = "date";
+        static final String BODY_DATE = "dt";
     }
 
     static abstract class BOOK_OTHER_SERVER {
         static final int OP_CODE = 1;
-        static final String BODY_STUDENT_ID = "stdId";
-        static final String BODY_ROOM_NO = "rNo";
-        static final String BODY_DATE = "date";
+        static final String BODY_STUDENT_ID = "sI";
+        static final String BODY_ROOM_NO = "rN";
+        static final String BODY_DATE = "dt";
         static final String BODY_TIME_SLOT = "ts";
+    }
+
+    static abstract class CANCEL_OTHER_SERVER {
+        static final int OP_CODE = 2;
+        static final String BODY_BOOKING_ID = "bI";
     }
 }

@@ -96,4 +96,16 @@ class StudentOperations {
 
         return success;
     }
+
+    public boolean cancelBooking(Scanner scan, String studentId) {
+        boolean success;
+        String bookingId;
+
+        System.out.println("Enter the bookingId:");
+        bookingId = scan.nextLine();
+
+        success = campus.cancelBooking(studentId, bookingId);
+
+        return success;
+    }
 }
