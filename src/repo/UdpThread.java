@@ -1,5 +1,6 @@
 package repo;
 
+import schema.Campus;
 import schema.UdpPacket;
 
 import java.io.*;
@@ -35,6 +36,14 @@ public class UdpThread implements Runnable {
             switch (udpPacket.operationName) {
                 case CentralRepositoryOps.ADD_CAMPUS.OP_CODE:
                     outgoing = serialize(ops.addCampus(udpPacket.body));
+                    break;
+                case CentralRepositoryOps.LIST_CAMPUSES.OP_CODE:
+                    outgoing = serialize(this.ops.getCampusList());
+                    break;
+                case CentralRepositoryOps.UDP_PORT.OP_CODE:
+                    String code = (String) udpPacket.body.get(CentralRepositoryOps.UDP_PORT.BODY_CODE);
+                    int udpPort = this.ops.getUdpPort(code);
+                    outgoing = serialize(udpPort);
                     break;
                 default:
                     outgoing = serialize("Error");

@@ -20,7 +20,7 @@ class AdminOperations {
     String askAdminId(Scanner scan) {
         String response, adminId;
 
-        System.out.println("\nDo you have adminId? (y/n)");
+        System.out.println("\nDo you have an adminId? (y/n)");
         response = scan.nextLine();
 
         if (response.equalsIgnoreCase("y")) {

@@ -1,5 +1,6 @@
 package server;
 
+import RoomReservationApp.AvailTimeSlot;
 import RoomReservationApp.AvailTimeSlotsHolder;
 import RoomReservationApp.CampusPOA;
 import RoomReservationApp.TimeSlot;
@@ -27,6 +28,8 @@ public class CampusOperations extends CampusPOA {
     private static final Object roomLock = new Object();
 
     CampusOperations(Logger logs) {
+        students = new Hashtable<>();
+        admins = new ArrayList<>();
         this.logs = logs;
     }
 
@@ -183,12 +186,325 @@ public class CampusOperations extends CampusPOA {
 
     @Override
     public boolean getAvailableTimeSlots(String date, AvailTimeSlotsHolder availTimeSlots) {
-        return false;
+        int total, noOfCampuses;
+        AvailTimeSlot ts;
+        List<AvailTimeSlot> availTimeSlotList = new ArrayList<>();
+
+        ts = new AvailTimeSlot(campus.getCode(), this.totalAvailableTimeSlots(date));
+        availTimeSlotList.add(ts);
+
+        List<Campus> campuses = this.getListOfCampuses();
+
+        if (campuses == null)
+            logs.warning("No other campus(es) found!");
+        else {
+            for (Campus item : campuses) {
+                if (item.getCode().equalsIgnoreCase(campus.getCode()))
+                    continue;
+                total = this.fetchTotalTimeSlots(date, item.getUdpPort());
+                ts = new AvailTimeSlot(item.getCode(), total);
+                availTimeSlotList.add(ts);
+            }
+        }
+
+        noOfCampuses = availTimeSlotList.size();
+        AvailTimeSlot[] slots = new AvailTimeSlot[noOfCampuses];
+        for (int i = 0; i < noOfCampuses; i++) {
+            slots[i] = availTimeSlotList.get(i);
+        }
+
+        availTimeSlots.value = slots;
+        return true;
+    }
+
+    // gets total number of available time slots for a particular campus server.
+    int totalAvailableTimeSlots(String date) {
+        int total = 0;
+
+        if (!this.roomRecords.containsKey(date))
+            return 0;
+
+        HashMap<Integer, List<TimeSlot>> rooms = this.roomRecords.get(date);
+
+        for (Map.Entry<Integer, List<TimeSlot>> entry : rooms.entrySet()) {
+            List<TimeSlot> slots = entry.getValue();
+
+            for (TimeSlot item : slots) {
+                // already booked ? it's not available
+                total += ((item.bookingId == null) ? 1 : 0);
+            }
+        }
+
+        return total;
+    }
+
+    private List<Campus> getListOfCampuses() {
+        // connect to auth server
+        try {
+            DatagramSocket socket = new DatagramSocket();
+
+            // make data object
+            UdpPacket udpPacket = new UdpPacket(CentralRepositoryOps.LIST_CAMPUSES.OP_CODE, null);
+
+            // make packet and send
+            byte[] outgoing = serialize(udpPacket);
+            DatagramPacket outgoingPacket = new DatagramPacket(outgoing, outgoing.length, InetAddress.getByName("localhost"), 8009);
+            socket.send(outgoingPacket);
+
+            // incoming
+            byte[] incoming = new byte[1000];
+            DatagramPacket incomingPacket = new DatagramPacket(incoming, incoming.length);
+            socket.receive(incomingPacket);
+
+            @SuppressWarnings("unchecked")
+            List<Campus> response = (List<Campus>) deserialize(incomingPacket.getData());
+
+            return response;
+        } catch (SocketException se) {
+            logs.warning("Error creating a client socket for connection to authentication server.\nMessage: " + se.getMessage());
+        } catch (IOException ioe) {
+            logs.warning("Error creating serialized object.\nMessage: " + ioe.getMessage());
+        } catch (ClassNotFoundException e) {
+            logs.warning("Error parsing the response from auth server.\nMessage: " + e.getMessage());
+        }
+
+        return null;
+    }
+
+    private int fetchTotalTimeSlots(String date, int udpPort) {
+        int total = 0;
+        // connect to campus server
+        try {
+            DatagramSocket socket = new DatagramSocket();
+
+            // make data object
+            HashMap<String, Object> body = new HashMap<>();
+            body.put(TOTAL_TIMESLOT.BODY_DATE, date);
+            UdpPacket udpPacket = new UdpPacket(TOTAL_TIMESLOT.OP_CODE, body);
+
+            // make packet and send
+            byte[] outgoing = serialize(udpPacket);
+            DatagramPacket outgoingPacket = new DatagramPacket(outgoing, outgoing.length, InetAddress.getByName("localhost"), udpPort);
+            socket.send(outgoingPacket);
+
+            // incoming
+            byte[] incoming = new byte[1000];
+            DatagramPacket incomingPacket = new DatagramPacket(incoming, incoming.length);
+            socket.receive(incomingPacket);
+
+            total = (int) deserialize(incomingPacket.getData());
+        } catch (SocketException se) {
+            logs.warning("Error creating a client socket for connection to authentication server.\nMessage: " + se.getMessage());
+        } catch (IOException ioe) {
+            logs.warning("Error creating serialized object.\nMessage: " + ioe.getMessage());
+        } catch (ClassNotFoundException e) {
+            logs.warning("Error parsing the response from auth server.\nMessage: " + e.getMessage());
+        }
+
+        return total;
     }
 
     @Override
-    public String bookRoom(String studentId, String date, int roomNumber, TimeSlot timeSlot) {
-        return null;
+    public String bookRoom(String studentId, String code, String date, int roomNumber, TimeSlot timeSlot) {
+        String bookingId;
+        Student student;
+
+        // no student. no booking.
+        if (!this.students.containsKey(studentId))
+            return "No student found!";
+
+        student = this.students.get(studentId);
+
+        // super active student. no booking.
+        if (student.bookingIds.size() > 3)
+            return "Maximum booking limit has been exceeded.";
+
+        if (code.equalsIgnoreCase(campus.getCode())) {
+            // make sure others don't book it.
+            synchronized (roomLock) {
+                // no date. no booking.
+                if (!this.roomRecords.containsKey(date))
+                    return "Incorrect date provided!";
+                HashMap<Integer, List<TimeSlot>> room = this.roomRecords.get(date);
+                // no room. no booking
+                if (!room.containsKey(roomNumber))
+                    return "Incorrect room number provided!";
+                List<TimeSlot> timeSlots = room.get(roomNumber);
+                // get the time slot to book
+                TimeSlot slot = null;
+                int index = -1;
+                for (TimeSlot item : timeSlots) {
+                    if (item.startTime.equalsIgnoreCase(timeSlot.startTime) && item.endTime.equalsIgnoreCase(timeSlot.endTime)) {
+                        slot = item;
+                        index = timeSlots.indexOf(item);
+                        break;
+                    }
+                }
+                // no time slot. no booking.
+                if (slot == null)
+                    return "Time slot does not exist!";
+                // already booked ? no booking.
+                if (slot.bookedBy != null)
+                    return "Time slot has already been booked by other student.";
+
+                // generate booking id.
+                Random random = new Random();
+                int num = random.nextInt(10000);
+                bookingId = "BKG" + campus.getCode().toUpperCase() + String.format("%04d", num);
+
+                // book it.
+                slot.bookingId = bookingId;
+                slot.bookedBy = studentId;
+
+                // update room records
+                timeSlots.set(index, slot);
+                room.put(roomNumber, timeSlots);
+                this.roomRecords.put(date, room);
+            }
+
+            synchronized (studentLock) {
+                student.bookingIds.add(bookingId);
+                this.students.put(studentId, student);
+            }
+
+            logs.info("New booking has been created under " + studentId + " with id, " + bookingId);
+        } else {
+            // get the port of the other campus
+            int port = getUdpPort(code);
+            // book on the other campus
+            bookingId = bookRoomOnOtherCampus(studentId, roomNumber, date, timeSlot, port);
+            // update the count
+            if (bookingId != null) {
+                synchronized (studentLock) {
+                    student.bookingIds.add(bookingId);
+                    this.students.put(studentId, student);
+                }
+                logs.info("New booking has been created under " + studentId + " with id, " + bookingId);
+            }
+        }
+
+        return bookingId;
+    }
+
+    private int getUdpPort(String code) {
+        int port = -1;
+
+        // connect to auth server
+        try {
+            DatagramSocket socket = new DatagramSocket();
+
+            // make data object
+            HashMap<String, Object> body = new HashMap<>();
+            body.put(CentralRepositoryOps.UDP_PORT.BODY_CODE, code);
+            UdpPacket udpPacket = new UdpPacket(CentralRepositoryOps.UDP_PORT.OP_CODE, body);
+
+            // make packet and send
+            byte[] outgoing = serialize(udpPacket);
+            DatagramPacket outgoingPacket = new DatagramPacket(outgoing, outgoing.length, InetAddress.getByName("localhost"), 8009);
+            socket.send(outgoingPacket);
+
+            // incoming
+            byte[] incoming = new byte[1000];
+            DatagramPacket incomingPacket = new DatagramPacket(incoming, incoming.length);
+            socket.receive(incomingPacket);
+
+            port = (int) deserialize(incomingPacket.getData());
+        } catch (SocketException se) {
+            logs.warning("Error creating a client socket for connection to authentication server.\nMessage: " + se.getMessage());
+        } catch (IOException ioe) {
+            logs.warning("Error creating serialized object.\nMessage: " + ioe.getMessage());
+        } catch (ClassNotFoundException e) {
+            logs.warning("Error parsing the response from auth server.\nMessage: " + e.getMessage());
+        }
+
+        return port;
+    }
+
+    private String bookRoomOnOtherCampus(String studentId, int roomNo, String date, TimeSlot slot, int udpPort) {
+        String bookingId = null;
+
+        // connect to auth server
+        try {
+            DatagramSocket socket = new DatagramSocket();
+
+            // make data object
+            HashMap<String, Object> body = new HashMap<>();
+            body.put(BOOK_OTHER_SERVER.BODY_STUDENT_ID, studentId);
+            body.put(BOOK_OTHER_SERVER.BODY_ROOM_NO, roomNo);
+            body.put(BOOK_OTHER_SERVER.BODY_DATE, date);
+            body.put(BOOK_OTHER_SERVER.BODY_TIME_SLOT, slot);
+            UdpPacket udpPacket = new UdpPacket(BOOK_OTHER_SERVER.OP_CODE, body);
+
+            // make packet and send
+            byte[] outgoing = serialize(udpPacket);
+            DatagramPacket outgoingPacket = new DatagramPacket(outgoing, outgoing.length, InetAddress.getByName("localhost"), udpPort);
+            socket.send(outgoingPacket);
+
+            // incoming
+            byte[] incoming = new byte[1000];
+            DatagramPacket incomingPacket = new DatagramPacket(incoming, incoming.length);
+            socket.receive(incomingPacket);
+
+            bookingId = (String) deserialize(incomingPacket.getData());
+
+        } catch (SocketException se) {
+            logs.warning("Error creating a client socket for connection to authentication server.\nMessage: " + se.getMessage());
+        } catch (IOException ioe) {
+            logs.warning("Error creating serialized object.\nMessage: " + ioe.getMessage());
+        } catch (ClassNotFoundException e) {
+            logs.warning("Error parsing the response from auth server.\nMessage: " + e.getMessage());
+        }
+
+        return bookingId;
+    }
+
+    String bookRoomFromOtherCampus(String studentId, int roomNumber, String date, TimeSlot timeSlot) {
+        String bookingId;
+        // make sure others don't book it.
+        synchronized (roomLock) {
+            // no date. no booking.
+            if (!this.roomRecords.containsKey(date))
+                return "Incorrect date provided!";
+            HashMap<Integer, List<TimeSlot>> room = this.roomRecords.get(date);
+            // no room. no booking
+            if (!room.containsKey(roomNumber))
+                return "Incorrect room number provided!";
+            List<TimeSlot> timeSlots = room.get(roomNumber);
+            // get the time slot to book
+            TimeSlot slot = null;
+            int index = -1;
+            for (TimeSlot item : timeSlots) {
+                if (item.startTime.equalsIgnoreCase(timeSlot.startTime) && item.endTime.equalsIgnoreCase(timeSlot.endTime)) {
+                    slot = item;
+                    index = timeSlots.indexOf(item);
+                    break;
+                }
+            }
+            // no time slot. no booking.
+            if (slot == null)
+                return "Time slot does not exist!";
+            // already booked ? no booking.
+            if (slot.bookedBy != null)
+                return "Time slot has already been booked by other student.";
+
+            // generate booking id.
+            Random random = new Random();
+            int num = random.nextInt(10000);
+            bookingId = "BKG" + campus.getCode().toUpperCase() + String.format("%04d", num);
+
+            // book it.
+            slot.bookingId = bookingId;
+            slot.bookedBy = studentId;
+
+            // update room records
+            timeSlots.set(index, slot);
+            room.put(roomNumber, timeSlots);
+            this.roomRecords.put(date, room);
+
+            logs.info("New booking has been created under " + studentId + " with id, " + bookingId);
+        }
+
+        return bookingId;
     }
 
     @Override
@@ -211,5 +527,18 @@ public class CampusOperations extends CampusPOA {
                 return o.readObject();
             }
         }
+    }
+
+    static abstract class TOTAL_TIMESLOT {
+        static final int OP_CODE = 0;
+        static final String BODY_DATE = "date";
+    }
+
+    static abstract class BOOK_OTHER_SERVER {
+        static final int OP_CODE = 1;
+        static final String BODY_STUDENT_ID = "stdId";
+        static final String BODY_ROOM_NO = "rNo";
+        static final String BODY_DATE = "date";
+        static final String BODY_TIME_SLOT = "ts";
     }
 }

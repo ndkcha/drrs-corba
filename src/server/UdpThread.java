@@ -1,5 +1,6 @@
 package server;
 
+import RoomReservationApp.TimeSlot;
 import schema.UdpPacket;
 
 import java.io.*;
@@ -33,7 +34,19 @@ public class UdpThread implements Runnable {
 
             // perform actions
             switch (udpPacket.operationName) {
-                // implement actions
+                case CampusOperations.TOTAL_TIMESLOT.OP_CODE:
+                    String date = (String) udpPacket.body.get(CampusOperations.TOTAL_TIMESLOT.BODY_DATE);
+                    int totalTimeSlots = campusOps.totalAvailableTimeSlots(date);
+                    outgoing = serialize(totalTimeSlots);
+                    break;
+                case CampusOperations.BOOK_OTHER_SERVER.OP_CODE:
+                    String studentId = (String) udpPacket.body.get(CampusOperations.BOOK_OTHER_SERVER.BODY_STUDENT_ID);
+                    int roomNo = (int) udpPacket.body.get(CampusOperations.BOOK_OTHER_SERVER.BODY_ROOM_NO);
+                    String d = (String) udpPacket.body.get(CampusOperations.BOOK_OTHER_SERVER.BODY_DATE);
+                    TimeSlot slot = (TimeSlot) udpPacket.body.get(CampusOperations.BOOK_OTHER_SERVER.BODY_TIME_SLOT);
+                    String bookingId = this.campusOps.bookRoomFromOtherCampus(studentId, roomNo, d, slot);
+                    outgoing = serialize(bookingId);
+                    break;
                 default:
                     outgoing = serialize("Error");
                     logs.warning("Operation not found!");

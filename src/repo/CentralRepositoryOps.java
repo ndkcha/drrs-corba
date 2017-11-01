@@ -41,11 +41,34 @@ public class CentralRepositoryOps {
         }
     }
 
+    Hashtable<String, Campus> getCampusList() {
+        return campusList;
+    }
+
+    int getUdpPort(String code) {
+        if (!this.campusList.containsKey(code)) {
+            logs.warning("Could not complete the request for udp port. No campus found for " + code);
+            return -1;
+        }
+
+        logs.info("The udp port is requested for " + code + "!");
+        return this.campusList.get(code).getUdpPort();
+    }
+
     public static abstract class ADD_CAMPUS {
         public static final int OP_CODE = 0;
         public static final String BODY_UDP_PORT = "up";
         public static final String BODY_NAME = "n";
         public static final String BODY_NAMING_REFERENCE = "nf";
+        public static final String BODY_CODE = "c";
+    }
+
+    public static abstract class LIST_CAMPUSES {
+        public static final int OP_CODE = 1;
+    }
+
+    public static abstract class UDP_PORT {
+        public static final int OP_CODE = 2;
         public static final String BODY_CODE = "c";
     }
 }
