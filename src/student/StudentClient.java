@@ -86,7 +86,7 @@ public class StudentClient {
 
         do {
             // ask what to do
-            System.out.print("What do you want to do?\n\t1. Book a room\n\t2. Cancel booking\nAny other number to exit\n : ");
+            System.out.print("What do you want to do?\n\t1. Book a room\n\t2. Cancel booking\n\t3. Change booking\nAny other number to exit\n : ");
             choice = scanner.nextInt();
             scanner.nextLine();
 
@@ -100,6 +100,11 @@ public class StudentClient {
                 case 2:
                     success = studentOps.cancelBooking(scanner, studentId);
                     message = success ? "The booking has been cancelled successfully" : "An unexpected error thrown while cancelling the booking.";
+                    break;
+                // change booking
+                case 3:
+                    success = studentOps.changeBooking(scanner);
+                    message = success ? "The booking has been changed successfully" : "An unexpected error thrown while changing the booking.";
                     break;
                 // exit
                 default:
