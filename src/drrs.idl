@@ -26,7 +26,7 @@ module RoomReservationApp {
         boolean lookupStudent(in string id);
         string generateStudentId();
         boolean getAvailableTimeSlots(in string date, out AvailTimeSlots availTimeSlots);
-        string bookRoom(in string studentId, in string date, in long roomNumber, in TimeSlot timeSlot);
+        string bookRoom(in string studentId, in string code, in string date, in long roomNumber, in TimeSlot timeSlot);
         boolean cancelBooking(in string studentId, in string bookingId);
     };
 };
