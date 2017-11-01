@@ -2,8 +2,7 @@ package repo;
 
 import schema.Campus;
 
-import java.util.HashMap;
-import java.util.Hashtable;
+import java.util.*;
 import java.util.logging.Logger;
 
 public class CentralRepositoryOps {
@@ -41,8 +40,13 @@ public class CentralRepositoryOps {
         }
     }
 
-    Hashtable<String, Campus> getCampusList() {
-        return campusList;
+    List<Campus> getCampusList() {
+        List<Campus> list = new ArrayList<>();
+        for (Map.Entry<String, Campus> campusEntry : campusList.entrySet()) {
+            Campus item = campusEntry.getValue();
+            list.add(item);
+        }
+        return list;
     }
 
     int getUdpPort(String code) {

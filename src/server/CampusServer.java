@@ -77,11 +77,7 @@ public class CampusServer {
             NameComponent path[] = ncRef.to_name(campus.getNamingReference());
             ncRef.rebind(path, href);
 
-            // run the object broker
-            orb.run();
-
             // mark the operation successful
-            System.out.println();
             logs.info("The campus server is up and running! Reference: " + campus.getNamingReference());
         } catch (InvalidName invalidName) {
             logs.severe("Invalid reference to the Portable Object Adapter. The server can not initialize POA. \nMessage: " + invalidName.getMessage());

@@ -26,7 +26,7 @@ public class AdminClient {
         Logger logs = Logger.getLogger("Admin Client");
         Scanner scanner = new Scanner(System.in);
 
-        System.out.print("Enter the (reference) name of the server: ");
+        System.out.println("Enter the (reference) name of the server: ");
         campusNamingReference = scanner.nextLine();
 
         // start orb client
@@ -85,7 +85,7 @@ public class AdminClient {
 
         do {
             // ask what to do
-            System.out.print("What do you want to do?\n\t1. Create a room\n\t2. Delete a room\nAny other number to exit");
+            System.out.println("What do you want to do?\n\t1. Create a room\n\t2. Delete a room\nAny other number to exit");
             choice = scanner.nextInt();
             scanner.nextLine();
 

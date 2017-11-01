@@ -36,7 +36,7 @@ public class UdpThread implements Runnable {
             switch (udpPacket.operationName) {
                 case CampusOperations.TOTAL_TIMESLOT.OP_CODE:
                     String date = (String) udpPacket.body.get(CampusOperations.TOTAL_TIMESLOT.BODY_DATE);
-                    int totalTimeSlots = campusOps.totalAvailableTimeSlots(date);
+                    int totalTimeSlots = this.campusOps.totalAvailableTimeSlots(date);
                     outgoing = serialize(totalTimeSlots);
                     break;
                 case CampusOperations.BOOK_OTHER_SERVER.OP_CODE:

@@ -27,7 +27,7 @@ public class StudentClient {
         Logger logs = Logger.getLogger("Admin Client");
         Scanner scanner = new Scanner(System.in);
 
-        System.out.print("Enter the (reference) name of the server: ");
+        System.out.println("Enter the (reference) name of the server: ");
         namingReference = scanner.nextLine();
 
         // start orb client
@@ -68,7 +68,7 @@ public class StudentClient {
         studentId = studentOps.askStudentId(scanner);
 
         // look up studentId at server
-        if (campus.lookupStudent(studentId)) {
+        if (!campus.lookupStudent(studentId)) {
             logs.warning("No entry found for the studentId, " + studentId);
             return;
         }
@@ -86,7 +86,7 @@ public class StudentClient {
 
         do {
             // ask what to do
-            System.out.print("What do you want to do?\n\t1. Book a room\n\t2. Cancel booking\nAny other number to exit");
+            System.out.println("What do you want to do?\n\t1. Book a room\n\t2. Cancel booking\nAny other number to exit");
             choice = scanner.nextInt();
             scanner.nextLine();
 
