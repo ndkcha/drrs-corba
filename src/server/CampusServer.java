@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
-import java.util.Scanner;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 
@@ -28,12 +27,19 @@ public class CampusServer {
 
     public static void main(String args[]) {
         Logger logs;
-        Scanner scan = new Scanner(System.in);
         CampusOperations campusOps;
         Campus campus;
+        String orbDetails[] = new String[4];
 
-        System.out.println("Enter the name of the campus:");
-        String campusName = scan.nextLine();
+        if (args.length != 7) {
+            System.out.println("Usage: java CampusServer <campus-name> <campus-code> <campus-udp-port> -ORBInitialPort <orb-port> -ORBInitialHost <orb-host>");
+            return;
+        }
+
+        String campusName = args[0];
+        for (int i = 3, j = 0; i < args.length; i++, j++) {
+            orbDetails[j] = args[i];
+        }
 
         // set up the logging mechanism
         logs = Logger.getLogger(campusName + " Server");
@@ -48,17 +54,15 @@ public class CampusServer {
         campusOps = new CampusOperations(logs);
 
         // get the campus details from the user (for dynamic server initialization)
-        campus = campusOps.setUpCampus(campusName, scan);
+        campus = campusOps.setUpCampus(campusName, args[1], Integer.parseInt(args[2]));
 
         // register the connection details to central repository (so that other servers can communicate using udp)
         campusOps.registerCampus();
 
-        scan.close();
-
         // start the object request broker server
         try {
             // initialize the orb
-            ORB orb = ORB.init(args, null);
+            ORB orb = ORB.init(orbDetails, null);
 
             // get the reference to portable object adapter and activate the POA manager
             POA rootPOA = POAHelper.narrow(orb.resolve_initial_references("RootPOA"));
@@ -74,11 +78,11 @@ public class CampusServer {
             NamingContextExt ncRef = NamingContextExtHelper.narrow(objectReference);
 
             // bing the object reference in naming
-            NameComponent path[] = ncRef.to_name(campus.getNamingReference());
+            NameComponent path[] = ncRef.to_name(campus.getCode().toLowerCase());
             ncRef.rebind(path, href);
 
             // mark the operation successful
-            logs.info("The campus server is up and running! Reference: " + campus.getNamingReference());
+            logs.info("The campus server is up and running! Reference: " + campus.getCode().toLowerCase());
         } catch (InvalidName invalidName) {
             logs.severe("Invalid reference to the Portable Object Adapter. The server can not initialize POA. \nMessage: " + invalidName.getMessage());
             return;
@@ -116,6 +120,8 @@ public class CampusServer {
                 } catch (IOException ioe) {
                     logs.warning("Exception thrown while receiving packet.\nMessage: " + ioe.getMessage());
                 }
+                if (udpSocket.isClosed())
+                    break;
             }
         } catch (SocketException e) {
             logs.warning("Exception thrown while server was running/trying to start.\nMessage: " + e.getMessage());

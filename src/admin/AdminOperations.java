@@ -15,24 +15,6 @@ class AdminOperations {
         this.campus = campus;
     }
 
-    // asks user for adminId. generates one when necessary.
-    String askAdminId(Scanner scan) {
-        String response, adminId;
-
-        System.out.print("\nDo you have an adminId? (y/n): ");
-        response = scan.nextLine();
-
-        if (response.equalsIgnoreCase("y")) {
-            System.out.print("\n\nEnter your adminId: ");
-            adminId = scan.nextLine();
-        } else {
-            adminId = campus.generateAdminId();
-            System.out.println("\nYour new adminId is " + adminId + ".\nUse it for the logging into the system next time.");
-        }
-
-        return adminId;
-    }
-
     boolean createRoom(Scanner scan) {
         List<TimeSlot> timeSlots = new ArrayList<>();
         int roomNo, noOfTimeSlots;

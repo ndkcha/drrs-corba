@@ -19,16 +19,24 @@ public class StudentClient {
     public static void main(String args[]) {
         boolean isExitRequested = false, success;
         int choice;
-        String message;
+        String message, code, response, studentId = null;
         Campus campus;
-        String namingReference, studentId;
         StudentOperations studentOps;
 
-        Logger logs = Logger.getLogger("Admin Client");
-        Scanner scanner = new Scanner(System.in);
+        Logger logs = Logger.getLogger("Student Client");
+        Scanner scan = new Scanner(System.in);
 
-        System.out.print("Enter the (reference) name of the server: ");
-        namingReference = scanner.nextLine();
+        System.out.print("Do you have a studentId? (y/n): ");
+        response = scan.nextLine();
+
+        if (response.equalsIgnoreCase("y")) {
+            System.out.print("\nEnter your studentId: ");
+            studentId = scan.nextLine();
+            code = studentId.substring(0, 3).toUpperCase();
+        } else {
+            System.out.print("\nEnter the campus code you're in: ");
+            code = scan.nextLine();
+        }
 
         // start orb client
         try {
@@ -40,7 +48,7 @@ public class StudentClient {
             NamingContextExt ncRef = NamingContextExtHelper.narrow(objectReference);
 
             // get the remote interface
-            campus = CampusHelper.narrow(ncRef.resolve_str(namingReference));
+            campus = CampusHelper.narrow(ncRef.resolve_str(code.toLowerCase()));
         } catch (InvalidName invalidName) {
             logs.severe("Invalid reference to Name Service. \nMessage: " + invalidName.getMessage());
             return;
@@ -64,8 +72,10 @@ public class StudentClient {
         // initialize implementation class for the client
         studentOps = new StudentOperations(campus, logs);
 
-        // ask user for studentId
-        studentId = studentOps.askStudentId(scanner);
+        if (studentId == null) {
+            studentId = campus.generateStudentId();
+            System.out.println("\nYour new studentId is " + studentId + ".\n");
+        }
 
         // look up studentId at server
         if (!campus.lookupStudent(studentId)) {
@@ -82,28 +92,28 @@ public class StudentClient {
         }
 
         // be nice
-        System.out.println("\n\n\tWelcome to the campus!\n");
+        System.out.println("\tWelcome to the campus!\n");
 
         do {
             // ask what to do
             System.out.print("What do you want to do?\n\t1. Book a room\n\t2. Cancel booking\n\t3. Change booking\nAny other number to exit\n : ");
-            choice = scanner.nextInt();
-            scanner.nextLine();
+            choice = scan.nextInt();
+            scan.nextLine();
 
             switch (choice) {
                 // create a room
                 case 1:
-                    success = studentOps.bookRoom(scanner, studentId);
+                    success = studentOps.bookRoom(scan, studentId);
                     message = success ? "A room has successfully been booked." : "An unexpected error thrown while booking a room.";
                     break;
                 // cancel booking
                 case 2:
-                    success = studentOps.cancelBooking(scanner, studentId);
+                    success = studentOps.cancelBooking(scan, studentId);
                     message = success ? "The booking has been cancelled successfully" : "An unexpected error thrown while cancelling the booking.";
                     break;
                 // change booking
                 case 3:
-                    success = studentOps.changeBooking(scanner);
+                    success = studentOps.changeBooking(scan);
                     message = success ? "The booking has been changed successfully" : "An unexpected error thrown while changing the booking.";
                     break;
                 // exit
@@ -120,6 +130,6 @@ public class StudentClient {
                 logs.warning(message);
         } while (!isExitRequested);
 
-        scanner.close();
+        scan.close();
     }
 }

@@ -19,16 +19,24 @@ public class AdminClient {
     public static void main(String args[]) {
         boolean isExitRequested = false, success;
         int choice;
-        String message;
+        String message, adminId = null, response, code;
         Campus campus;
-        String campusNamingReference, adminId;
         AdminOperations adminOps;
         Logger logs = Logger.getLogger("Admin Client");
-        Scanner scanner = new Scanner(System.in);
+        Scanner scan = new Scanner(System.in);
 
         // ask where to go
-        System.out.print("Enter the (reference) name of the server: ");
-        campusNamingReference = scanner.nextLine();
+        System.out.print("Do you have an adminId? (y/n): ");
+        response = scan.nextLine();
+
+        if (response.equalsIgnoreCase("y")) {
+            System.out.print("\nEnter your adminId: ");
+            adminId = scan.nextLine();
+            code = adminId.substring(0, 3).toUpperCase();
+        } else {
+            System.out.print("\nEnter the campus code you're allotted to: ");
+            code = scan.nextLine();
+        }
 
         // start orb client
         try {
@@ -40,7 +48,7 @@ public class AdminClient {
             NamingContextExt ncRef = NamingContextExtHelper.narrow(objectReference);
 
             // get the remote interface
-            campus = CampusHelper.narrow(ncRef.resolve_str(campusNamingReference));
+            campus = CampusHelper.narrow(ncRef.resolve_str(code.toLowerCase()));
         } catch (InvalidName invalidName) {
             logs.severe("Invalid reference to Name Service. \nMessage: " + invalidName.getMessage());
             return;
@@ -64,8 +72,10 @@ public class AdminClient {
         // initialize implementation class for the client
         adminOps = new AdminOperations(campus);
 
-        // get adminId from the user
-        adminId = adminOps.askAdminId(scanner);
+        if (adminId == null) {
+            adminId = campus.generateAdminId();
+            System.out.println("\nYour new adminId is " + adminId + ".\n");
+        }
 
         // lookup the adminId at server
         if (!campus.lookupAdmin(adminId)) {
@@ -82,23 +92,23 @@ public class AdminClient {
         }
 
         // be nice
-        System.out.print("\n\n\tWelcome to the campus!\n");
+        System.out.println("\tWelcome to the campus!\n");
 
         do {
             // ask what to do
             System.out.println("What do you want to do?\n\t1. Create a room\n\t2. Delete a room\n\t3. Reset the bookings\nAny other number to exit");
-            choice = scanner.nextInt();
-            scanner.nextLine();
+            choice = scan.nextInt();
+            scan.nextLine();
 
             switch (choice) {
                 // create a room
                 case 1:
-                    success = adminOps.createRoom(scanner);
+                    success = adminOps.createRoom(scan);
                     message = success ? "A room has successfully been created." : "An unexpected error thrown while creating a room.";
                     break;
                 // delete a room
                 case 2:
-                    success = adminOps.deleteRoom(scanner);
+                    success = adminOps.deleteRoom(scan);
                     message = success ? "The room has successfully been deleted." : "An unexpected error thrown while deleting a room.";
                     break;
                 case 3:
@@ -119,6 +129,6 @@ public class AdminClient {
                 logs.warning(message);
         } while (!isExitRequested);
 
-        scanner.close();
+        scan.close();
     }
 }

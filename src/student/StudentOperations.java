@@ -17,23 +17,6 @@ class StudentOperations {
         this.logs = logs;
     }
 
-    String askStudentId(Scanner scan) {
-        String response, studentId;
-
-        System.out.print("Do you have a studentId? (y/n): ");
-        response = scan.nextLine();
-
-        if (response.equalsIgnoreCase("y")) {
-            System.out.print("\nEnter your studentId: ");
-            studentId = scan.nextLine();
-        } else {
-            studentId = campus.generateStudentId();
-            System.out.println("\n\nYour new studentId is " + studentId + ".\n");
-        }
-
-        return studentId;
-    }
-
     boolean bookRoom(Scanner scan, String studentId) {
         boolean success = false, isCodeFound = false;
         String code, start, end, date, bookingId;

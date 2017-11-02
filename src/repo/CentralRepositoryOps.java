@@ -11,7 +11,7 @@ public class CentralRepositoryOps {
     private static final Object campusLock = new Object();
 
     CentralRepositoryOps(Logger logs) {
-        this.campusList = new Hashtable<String, Campus>();
+        this.campusList = new Hashtable<>();
         this.logs = logs;
     }
 
@@ -21,12 +21,11 @@ public class CentralRepositoryOps {
             int udpPort;
             // add the campus. but check for the duplicate value
             if (!this.campusList.containsKey(code)) {
-                namingReference = (String) campus.get(ADD_CAMPUS.BODY_NAMING_REFERENCE);
                 name = (String) campus.get(ADD_CAMPUS.BODY_NAME);
                 udpPort = (Integer) campus.get(ADD_CAMPUS.BODY_UDP_PORT);
 
                 // make object and insert to the hash table
-                Campus item = new Campus(udpPort, code, namingReference, name);
+                Campus item = new Campus(udpPort, code, name);
                 campusList.put(code, item);
 
                 // mark the operation as successful
@@ -67,7 +66,6 @@ public class CentralRepositoryOps {
         public static final int OP_CODE = 0;
         public static final String BODY_UDP_PORT = "up";
         public static final String BODY_NAME = "n";
-        public static final String BODY_NAMING_REFERENCE = "nf";
         public static final String BODY_CODE = "c";
     }
 

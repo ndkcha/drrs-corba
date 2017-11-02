@@ -34,21 +34,10 @@ public class CampusOperations extends CampusPOA {
     }
 
     // ask for the campus details to make it visible in the local network as well as in remote references
-    Campus setUpCampus(String name, Scanner scan) {
-        String namingReference, code;
-        int port;
-
-        System.out.println("Enter the naming reference value (For NS lookup):");
-        namingReference = scan.nextLine();
-
-        System.out.println("Enter the campus code (e.g. DVL, WMT):");
-        code = scan.nextLine();
-
-        System.out.println("Enter the port number for UDP server:");
-        port = scan.nextInt();
+    Campus setUpCampus(String name, String code, int port) {
 
         // store the local copy of the variable to use it in further operations
-        campus = new Campus(port, code, namingReference, name);
+        campus = new Campus(port, code, name);
         return campus;
     }
 
@@ -62,7 +51,6 @@ public class CampusOperations extends CampusPOA {
             HashMap<String, Object> body = new HashMap<>();
             body.put(CentralRepositoryOps.ADD_CAMPUS.BODY_CODE, campus.getCode());
             body.put(CentralRepositoryOps.ADD_CAMPUS.BODY_NAME, campus.name);
-            body.put(CentralRepositoryOps.ADD_CAMPUS.BODY_NAMING_REFERENCE, campus.getNamingReference());
             body.put(CentralRepositoryOps.ADD_CAMPUS.BODY_UDP_PORT, campus.getUdpPort());
             UdpPacket udpPacket = new UdpPacket(CentralRepositoryOps.ADD_CAMPUS.OP_CODE, body);
 

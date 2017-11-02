@@ -6,13 +6,12 @@ import java.io.Serializable;
 
 public class Campus implements Serializable {
     private int udpPort;
-    private String namingReference, code;
+    private String code;
     public String name;
 
-    public Campus(int udpPort, String code, String namingReference, String name) {
+    public Campus(int udpPort, String code, String name) {
         this.udpPort = udpPort;
         this.code = code;
-        this.namingReference = namingReference;
         this.name = name;
     }
 
@@ -22,9 +21,5 @@ public class Campus implements Serializable {
 
     public String getCode() {
         return code;
-    }
-
-    public String getNamingReference() {
-        return namingReference;
     }
 }
