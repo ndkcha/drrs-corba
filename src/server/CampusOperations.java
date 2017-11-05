@@ -156,6 +156,7 @@ public class CampusOperations extends CampusPOA {
                 // find the room
                 if (rooms.containsKey(roomNo)) {
                     List<TimeSlot> timeSlotList = rooms.get(roomNo);
+                    List<Integer> slotsToDelete = new ArrayList<>();
 
                     for (TimeSlot inTimeSlot : timeSlots) {
                         // find slots to delete and delete them
@@ -180,8 +181,12 @@ public class CampusOperations extends CampusPOA {
                                     }
                                 }
 
-                                timeSlotList.remove(slotIndex);
+                                slotsToDelete.add(slotIndex);
                             }
+                        }
+
+                        for (int slotIndex : slotsToDelete) {
+                            timeSlotList.remove(slotIndex);
                         }
                     }
 
@@ -189,6 +194,7 @@ public class CampusOperations extends CampusPOA {
                     this.roomRecords.put(date, rooms);
 
                     success = true;
+                    this.logs.info("The room has successfully been deleted");
                 }
             }
         }
@@ -245,6 +251,7 @@ public class CampusOperations extends CampusPOA {
                 // update the date
                 this.roomRecords.put(date, rooms);
             }
+            this.logs.info("The booking have successfully been reset");
             return true;
         }
     }
@@ -270,23 +277,33 @@ public class CampusOperations extends CampusPOA {
             DatagramPacket incomingPacket = new DatagramPacket(incoming, incoming.length);
             socket.receive(incomingPacket);
 
+            if ((boolean) deserialize(incomingPacket.getData()))
+                this.logs.info("The booking has been removed from " + studentId);
+            else
+                this.logs.warning("There has been problem removing the booking from " + studentId);
         } catch (SocketException se) {
             logs.warning("Error creating a client socket for connection to the other server.\nMessage: " + se.getMessage());
         } catch (IOException ioe) {
             logs.warning("Error creating serialized object.\nMessage: " + ioe.getMessage());
+        } catch (ClassNotFoundException cne) {
+            logs.warning("Error parsing the response.\n Message: " + cne.getMessage());
         }
     }
 
     // invoke this when room is deleted for that booking.
     boolean deleteBooking(String studentId, String bookingId) {
         synchronized (studentLock) {
-            if (!this.students.containsKey(studentId))
+            if (this.students.containsKey(studentId)) {
+
+                Student student = this.students.get(studentId);
+                student.bookingIds.remove(bookingId);
+
+                this.students.put(studentId, student);
+                this.logs.info("The booking with id " + bookingId + " has been removed from student " + studentId);
+            } else {
+                this.logs.warning("Failed to remove booking " + bookingId + " from student " + studentId);
                 return false;
-
-            Student student = this.students.get(studentId);
-            student.bookingIds.remove(bookingId);
-
-            this.students.put(studentId, student);
+            }
         }
         return true;
     }
@@ -312,6 +329,7 @@ public class CampusOperations extends CampusPOA {
 
             Student student = new Student(studentId);
             this.students.put(studentId, student);
+            this.logs.info("A new student has been registered with id " + studentId);
 
             return studentId;
         }
@@ -509,7 +527,7 @@ public class CampusOperations extends CampusPOA {
             // book on the other campus
             bookingId = bookRoomOnOtherCampus(studentId, roomNumber, date, timeSlot, port);
             // update the count
-            if (bookingId != null) {
+            if ((bookingId != null) && (bookingId.startsWith("BKG"))) {
                 synchronized (studentLock) {
                     student.bookingIds.add(bookingId);
                     this.students.put(studentId, student);
@@ -751,7 +769,10 @@ public class CampusOperations extends CampusPOA {
 
         //  new room booked successfully ? cancel the old booking : the count has already been restored, just return back to client
         if (newBookingId.startsWith("BKG"))
-            this.cancelBooking(studentId, bookingId);
+            if (!this.cancelBooking(studentId, bookingId)) {
+                newBookingId = "Could not cancel the old booking.";
+                this.cancelBooking(studentId, newBookingId);
+            }
         else {
             this.logs.warning(newBookingId);
             newBookingId = "The booking could not be changed.\n" + newBookingId;

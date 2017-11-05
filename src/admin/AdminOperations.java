@@ -72,7 +72,7 @@ class AdminOperations {
         System.out.print("Enter the date (format: dd-MM-yyyy, e.g. 11-01-2018)\n : ");
         date = scan.nextLine();
 
-        System.out.println("Enter the room number (integer values only)\n : ");
+        System.out.print("Enter the room number (integer values only)\n : ");
         roomNo = scan.nextInt();
         scan.nextLine();
 
